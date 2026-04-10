@@ -1,0 +1,18 @@
+{
+  "name": "熱帯魚 えさやり",
+  "short_name": "えさやり",
+  "description": "熱帯魚の給餌チェックアプリ",
+  "start_url": "/fish-feeding/",
+  "display": "standalone",
+  "background_color": "#f0f9ff",
+  "theme_color": "#0369a1",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
