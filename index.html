@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>熱帯魚 えさやり記録</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif;
+      background: #f0f9ff;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .fish-anim {
+      font-size: 2.8rem;
+      animation: swim 3s ease-in-out infinite;
+      display: inline-block;
+    }
+
+    @keyframes swim {
+      0%, 100% { transform: translateX(0) rotate(0deg); }
+      30% { transform: translateX(6px) rotate(3deg); }
+      70% { transform: translateX(-6px) rotate(-3deg); }
+    }
+
+    h1 {
+      font-size: 1.3rem;
+      color: #0369a1;
+      margin-top: 8px;
+      font-weight: 700;
+    }
+
+    /* 日付ナビ */
+    .date-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin: 12px auto 0;
+      max-width: 320px;
+    }
+
+    .nav-btn {
+      background: white;
+      border: 1px solid #bae6fd;
+      border-radius: 8px;
+      width: 36px;
+      height: 36px;
+      font-size: 1.1rem;
+      color: #0369a1;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-btn:hover { background: #e0f2fe; }
+    .nav-btn:disabled { opacity: 0.3; cursor: default; background: white; }
+
+    .date-label {
+      font-size: 0.88rem;
+      color: #0369a1;
+      font-weight: 600;
+      min-width: 180px;
+      text-align: center;
+    }
+
+    .today-badge {
+      display: inline-block;
+      font-size: 0.68rem;
+      background: #0ea5e9;
+      color: white;
+      border-radius: 99px;
+      padding: 1px 8px;
+      margin-left: 6px;
+      vertical-align: middle;
+      font-weight: 700;
+    }
+
+    .past-note {
+      font-size: 0.75rem;
+      color: #f59e0b;
+      text-align: center;
+      margin-top: 6px;
+      display: none;
+    }
+
+    .past-note.show { display: block; }
+
+    /* プログレス */
+    .progress-bar-wrap {
+      background: #e0f2fe;
+      border-radius: 99px;
+      height: 8px;
+      margin: 16px auto 0;
+      max-width: 280px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+      border-radius: 99px;
+      transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .progress-text {
+      font-size: 0.78rem;
+      color: #0ea5e9;
+      text-align: center;
+      margin-top: 6px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    /* TODOリスト */
+    .todo-list {
+      max-width: 420px;
+      margin: 0 auto 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .todo-item {
+      background: white;
+      border-radius: 14px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      border: 2px solid transparent;
+      transition: border-color 0.3s, background 0.3s, transform 0.15s;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .todo-item:active { transform: scale(0.98); }
+
+    .todo-item.checked {
+      background: #f0fdf4;
+      border-color: #86efac;
+    }
+
+    .checkbox {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2.5px solid #cbd5e1;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      background: white;
+    }
+
+    .todo-item.checked .checkbox {
+      background: #22c55e;
+      border-color: #22c55e;
+      transform: scale(1.1);
+    }
+
+    .checkmark {
+      color: white;
+      font-size: 0.9rem;
+      font-weight: 700;
+      opacity: 0;
+      transform: scale(0);
+      transition: all 0.2s;
+    }
+
+    .todo-item.checked .checkmark { opacity: 1; transform: scale(1); }
+
+    .todo-icon { font-size: 1.6rem; flex-shrink: 0; }
+    .todo-body { flex: 1; }
+
+    .todo-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1e293b;
+      transition: color 0.3s;
+    }
+
+    .todo-item.checked .todo-title {
+      color: #86efac;
+      text-decoration: line-through;
+      text-decoration-color: #4ade80;
+    }
+
+    .todo-sub { font-size: 0.78rem; color: #94a3b8; margin-top: 2px; }
+
+    .todo-time {
+      font-size: 0.75rem;
+      color: #22c55e;
+      font-weight: 600;
+      text-align: right;
+      min-width: 48px;
+    }
+
+    /* 完了メッセージ */
+    .complete-msg {
+      max-width: 420px;
+      margin: 0 auto 24px;
+      background: linear-gradient(135deg, #0ea5e9, #22c55e);
+      border-radius: 14px;
+      padding: 16px 20px;
+      text-align: center;
+      color: white;
+      font-weight: 700;
+      font-size: 0.95rem;
+      display: none;
+      animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .complete-msg.show { display: block; }
+
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.8); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* 履歴 */
+    .history-section { max-width: 420px; margin: 0 auto; }
+
+    .history-title {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      padding-left: 4px;
+    }
+
+    .history-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .history-item {
+      background: white;
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .history-item:hover { background: #f0f9ff; }
+
+    .history-item.active {
+      background: #e0f2fe;
+      border: 1px solid #7dd3fc;
+    }
+
+    .history-date { font-size: 0.82rem; font-weight: 600; color: #475569; min-width: 90px; }
+
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dot.done { background: #22c55e; }
+    .dot.partial { background: #fbbf24; }
+    .dot.none { background: #e2e8f0; }
+
+    .history-status { font-size: 0.78rem; color: #94a3b8; flex: 1; }
+
+    .dots-row { display: flex; gap: 5px; }
+
+    .mini-dot { width: 10px; height: 10px; border-radius: 50%; background: #e2e8f0; }
+    .mini-dot.fed { background: #22c55e; }
+
+    .no-history { font-size: 0.8rem; color: #cbd5e1; padding: 4px; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="fish-anim">🐠</div>
+    <h1>熱帯魚 えさやり</h1>
+
+    <div class="date-nav">
+      <button class="nav-btn" id="btnPrev" onclick="changeDay(-1)">‹</button>
+      <div class="date-label" id="dateLabel"></div>
+      <button class="nav-btn" id="btnNext" onclick="changeDay(1)" disabled>›</button>
+    </div>
+    <p class="past-note" id="pastNote">⚠️ 過去の記録を編集中</p>
+
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progressBar" style="width:0%"></div>
+    </div>
+    <p class="progress-text" id="progressText">0 / 2 完了</p>
+  </div>
+
+  <div class="todo-list">
+    <div class="todo-item" id="item-morning" onclick="toggleFeed('morning')">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <span class="todo-icon">🌅</span>
+      <div class="todo-body">
+        <div class="todo-title">朝ごはん</div>
+        <div class="todo-sub">午前の給餌</div>
+      </div>
+      <div class="todo-time" id="time-morning"></div>
+    </div>
+
+    <div class="todo-item" id="item-evening" onclick="toggleFeed('evening')">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <span class="todo-icon">🌙</span>
+      <div class="todo-body">
+        <div class="todo-title">夜ごはん</div>
+        <div class="todo-sub">夜の給餌</div>
+      </div>
+      <div class="todo-time" id="time-evening"></div>
+    </div>
+  </div>
+
+  <div class="complete-msg" id="completeMsg">
+    🎉 今日の給餌は全部完了！お魚たちも喜んでいます 🐟
+  </div>
+
+  <div class="history-section">
+    <p class="history-title">過去の記録</p>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <script>
+    const SLOTS = ['morning', 'evening'];
+
+    // 表示中の日付オフセット（0=今日、-1=昨日、…）
+    let dayOffset = 0;
+
+    function keyFromOffset(offset) {
+      const d = new Date();
+      d.setDate(d.getDate() + offset);
+      return d.toISOString().slice(0, 10);
+    }
+
+    function todayKey() { return keyFromOffset(0); }
+    function currentKey() { return keyFromOffset(dayOffset); }
+
+    function getAllData() {
+      try { return JSON.parse(localStorage.getItem('fishFeedData') || '{}'); } catch { return {}; }
+    }
+
+    function saveData(data) {
+      // 過去7日分のみ保持
+      const cutoff = keyFromOffset(-7);
+      Object.keys(data).forEach(k => { if (k < cutoff) delete data[k]; });
+      localStorage.setItem('fishFeedData', JSON.stringify(data));
+    }
+
+    function currentState() {
+      const data = getAllData();
+      return data[currentKey()] || { morning: null, evening: null };
+    }
+
+    function toggleFeed(slot) {
+      const data = getAllData();
+      const key = currentKey();
+      if (!data[key]) data[key] = { morning: null, evening: null };
+      // 過去の日は時刻なしでチェックのみ
+      const isToday = dayOffset === 0;
+      if (data[key][slot]) {
+        data[key][slot] = null;
+      } else {
+        data[key][slot] = isToday
+          ? new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+          : '✓';
+      }
+      saveData(data);
+      render();
+    }
+
+    function changeDay(delta) {
+      const next = dayOffset + delta;
+      if (next > 0) return;
+      dayOffset = next;
+      render();
+    }
+
+    function formatDateLabel(offset) {
+      const d = new Date();
+      d.setDate(d.getDate() + offset);
+      const str = d.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short' });
+      if (offset === 0) return str + '<span class="today-badge">今日</span>';
+      if (offset === -1) return str + '<span class="today-badge" style="background:#64748b">昨日</span>';
+      return str;
+    }
+
+    function render() {
+      const state = currentState();
+      const doneCount = SLOTS.filter(s => state[s]).length;
+      const isToday = dayOffset === 0;
+
+      // 日付ナビ
+      document.getElementById('dateLabel').innerHTML = formatDateLabel(dayOffset);
+      document.getElementById('btnPrev').disabled = false;
+      document.getElementById('btnNext').disabled = dayOffset >= 0;
+      document.getElementById('pastNote').classList.toggle('show', !isToday);
+
+      // TODOアイテム
+      SLOTS.forEach(slot => {
+        const item = document.getElementById('item-' + slot);
+        const timeEl = document.getElementById('time-' + slot);
+        if (state[slot]) {
+          item.classList.add('checked');
+          timeEl.textContent = state[slot];
+        } else {
+          item.classList.remove('checked');
+          timeEl.textContent = '';
+        }
+      });
+
+      // プログレス
+      document.getElementById('progressBar').style.width = (doneCount / 2 * 100) + '%';
+      document.getElementById('progressText').textContent = doneCount + ' / 2 完了';
+
+      // 完了メッセージ（今日のみ）
+      document.getElementById('completeMsg').classList.toggle('show', isToday && doneCount === 2);
+
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const data = getAllData();
+      const today = todayKey();
+      const current = currentKey();
+      const keys = Object.keys(data)
+        .filter(k => k !== today)
+        .sort((a, b) => b.localeCompare(a))
+        .slice(0, 7);
+
+      const list = document.getElementById('historyList');
+      if (!keys.length) {
+        list.innerHTML = '<p class="no-history">まだ記録がありません</p>';
+        return;
+      }
+
+      list.innerHTML = keys.map(k => {
+        const d = data[k];
+        const fed = SLOTS.filter(s => d[s]).length;
+        const dotClass = fed === 2 ? 'done' : fed === 1 ? 'partial' : 'none';
+        const statusText = fed === 2 ? '2回完了' : fed === 1 ? '1回のみ' : '未給餌';
+        const dateStr = new Date(k + 'T00:00:00').toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' });
+        const dots = SLOTS.map(s => `<div class="mini-dot ${d[s] ? 'fed' : ''}"></div>`).join('');
+        const isActive = k === current;
+        // 今日からの差分を計算してoffsetを出す
+        const diffDays = (new Date(k) - new Date(today)) / 86400000;
+        return `<div class="history-item ${isActive ? 'active' : ''}" onclick="jumpToDate(${diffDays})">
+          <span class="history-date">${dateStr}</span>
+          <div class="dot ${dotClass}"></div>
+          <span class="history-status">${statusText}</span>
+          <div class="dots-row">${dots}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function jumpToDate(offset) {
+      dayOffset = offset;
+      render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    render();
+
+    // 日付変更を検知
+    let lastDate = todayKey();
+    setInterval(() => {
+      if (todayKey() !== lastDate) {
+        lastDate = todayKey();
+        if (dayOffset === 0) render();
+      }
+    }, 60000);
+  </script>
+</body>
+</html>
